@@ -46,11 +46,11 @@ def initialize():
     dense_model = SentenceTransformer('BAAI/bge-small-en')
 
     # Embeddings
-    corpus_embeddings = dense_model.encode(
-        corpus_texts,
-        convert_to_numpy=True,
-        show_progress_bar=True
-    )
+  #  corpus_embeddings = dense_model.encode(
+   #     corpus_texts,
+    #    convert_to_numpy=True,
+     #   show_progress_bar=True
+    #)
 
     initialized = True
     print("✅ Pipeline loaded successfully")
@@ -60,28 +60,42 @@ def initialize():
 
 
 # 🔥 STEP 2: Retrieval function
-def hybrid_retrieve(query, alpha=0.5, top_k=10):
+ddef hybrid_retrieve(query, alpha=0.5, top_k=10):
+    global corpus_embeddings
+
     tokenized_query = query.split()
     bm25_scores = bm25.get_scores(tokenized_query)
 
+    # Query embedding
     query_embedding = dense_model.encode([query], convert_to_numpy=True)[0]
+
+    # 🔥 Lazy compute corpus embeddings
+    if corpus_embeddings is None:
+        print("Encoding corpus embeddings (first time)...")
+        corpus_embeddings = dense_model.encode(
+            corpus_texts,
+            convert_to_numpy=True,
+            show_progress_bar=True
+        )
+
     dense_scores = cosine_similarity([query_embedding], corpus_embeddings)[0]
 
+    # Normalize
     bm25_scores = (bm25_scores - bm25_scores.min()) / (bm25_scores.max() - bm25_scores.min() + 1e-8)
     dense_scores = (dense_scores - dense_scores.min()) / (dense_scores.max() - dense_scores.min() + 1e-8)
 
+    # Combine
     final_scores = alpha * bm25_scores + (1 - alpha) * dense_scores
 
     top_indices = np.argsort(final_scores)[::-1][:top_k]
 
     return [
-    {
-        "doc_id": doc_ids[i],
-        "text": corpus_texts[i]
-    }
-    for i in top_indices
-]
-
+        {
+            "doc_id": doc_ids[i],
+            "text": corpus_texts[i]
+        }
+        for i in top_indices
+    ]
 
 # 🔥 STEP 3: API-facing function
 def search(query: str, alpha: float = 0.2):
