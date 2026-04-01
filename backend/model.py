@@ -1,4 +1,10 @@
 # backend/model.py
+bm25 = None
+dense_model = None
+corpus_embeddings = None
+doc_ids = None
+corpus_texts = None
+initialized = False
 
 from beir.datasets.data_loader import GenericDataLoader
 from beir import util
@@ -11,7 +17,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 # 🔥 STEP 1: Load everything ONCE
-def load_pipeline():
+def initialize():
+    global bm25, dense_model, corpus_embeddings, doc_ids, corpus_texts, initialized
+
+    if initialized:
+        return
+
     print("Loading dataset and models...")
 
     # Download dataset
@@ -41,10 +52,8 @@ def load_pipeline():
         show_progress_bar=True
     )
 
+    initialized = True
     print("✅ Pipeline loaded successfully")
-
-    return bm25, dense_model, corpus_embeddings, doc_ids, corpus_texts
-
 
 # Load once globally
 bm25, dense_model, corpus_embeddings, doc_ids, corpus_texts = load_pipeline()
@@ -76,6 +85,8 @@ def hybrid_retrieve(query, alpha=0.5, top_k=10):
 
 # 🔥 STEP 3: API-facing function
 def search(query: str, alpha: float = 0.2):
+    initialize()   # 👈 THIS IS THE KEY FIX
+
     bm25_results = hybrid_retrieve(query, alpha=1.0, top_k=10)
     dense_results = hybrid_retrieve(query, alpha=0.0, top_k=10)
     hybrid_results = hybrid_retrieve(query, alpha=alpha, top_k=10)
