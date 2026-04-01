@@ -14,6 +14,14 @@ from rank_bm25 import BM25Okapi
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+#from sentence_transformers import SentenceTransformer
+
+def get_model():
+    global dense_model
+    if dense_model is None:
+        print("Loading BGE model...")
+        dense_model = SentenceTransformer('BAAI/bge-small-en')
+    return dense_model
 
 
 # 🔥 STEP 1: Load everything ONCE
@@ -43,7 +51,7 @@ def initialize():
     bm25 = BM25Okapi(tokenized_corpus)
 
     # Dense model
-    dense_model = SentenceTransformer('BAAI/bge-small-en')
+   # dense_model = SentenceTransformer('BAAI/bge-small-en')
 
     # Embeddings
   #  corpus_embeddings = dense_model.encode(
@@ -67,12 +75,14 @@ ddef hybrid_retrieve(query, alpha=0.5, top_k=10):
     bm25_scores = bm25.get_scores(tokenized_query)
 
     # Query embedding
-    query_embedding = dense_model.encode([query], convert_to_numpy=True)[0]
-
+    #query_embedding = dense_model.encode([query], convert_to_numpy=True)[0]
+    model = get_model()
+    query_embedding = model.encode([query], convert_to_numpy=True)[0]
     # 🔥 Lazy compute corpus embeddings
     if corpus_embeddings is None:
-        print("Encoding corpus embeddings (first time)...")
-        corpus_embeddings = dense_model.encode(
+        print("Encoding corpus embeddings...")
+        model = get_model()
+        corpus_embeddings = model.encode(
             corpus_texts,
             convert_to_numpy=True,
             show_progress_bar=True
