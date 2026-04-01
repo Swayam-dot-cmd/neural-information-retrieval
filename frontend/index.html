@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neural IR Search</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f3;
+      --bg-tertiary: #eeede9;
+      --text-primary: #1a1a18;
+      --text-secondary: #555550;
+      --text-tertiary: #999990;
+      --border-light: rgba(0,0,0,0.1);
+      --border-medium: rgba(0,0,0,0.18);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1e1e1c;
+        --bg-secondary: #272725;
+        --bg-tertiary: #161614;
+        --text-primary: #f0efe8;
+        --text-secondary: #b0afa8;
+        --text-tertiary: #666660;
+        --border-light: rgba(255,255,255,0.08);
+        --border-medium: rgba(255,255,255,0.14);
+      }
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* ── Header ── */
+    .ir-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 2rem;
+    }
+
+    .ir-logo {
+      width: 44px; height: 44px;
+      background: var(--text-primary);
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .ir-logo svg { width: 22px; height: 22px; }
+
+    .ir-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+
+    .ir-subtitle {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* ── Search Panel ── */
+    .search-panel {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .search-input {
+      flex: 1;
+      height: 44px;
+      padding: 0 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      background: var(--bg-secondary);
+      border: 0.5px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .search-input:focus {
+      border-color: var(--border-medium);
+      box-shadow: 0 0 0 3px rgba(128,128,128,0.1);
+    }
+
+    .search-input::placeholder { color: var(--text-tertiary); }
+
+    .search-btn {
+      height: 44px;
+      padding: 0 22px;
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .search-btn:hover { opacity: 0.82; }
+    .search-btn:active { transform: scale(0.97); }
+    .search-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    /* ── Alpha Slider ── */
+    .alpha-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .alpha-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 44px;
+    }
+
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border-medium);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--text-primary);
+      border: 2px solid var(--bg-primary);
+      box-shadow: 0 0 0 1.5px var(--border-medium);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    input[type=range]::-moz-range-thumb {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--text-primary);
+      border: 2px solid var(--bg-primary);
+      cursor: pointer;
+    }
+
+    .alpha-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      min-width: 28px;
+      text-align: right;
+    }
+
+    .alpha-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      padding: 0 2px;
+    }
+
+    .alpha-hint span {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      font-family: 'Space Mono', monospace;
+    }
+
+    .badges { display: flex; gap: 5px; }
+
+    .badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-bm    { background: #E6F1FB; color: #0C447C; }
+    .badge-dense { background: #EAF3DE; color: #3B6D11; }
+    .badge-hybrid{ background: #FBEAF0; color: #72243E; }
+
+    @media (prefers-color-scheme: dark) {
+      .badge-bm    { background: #0C447C; color: #B5D4F4; }
+      .badge-dense { background: #27500A; color: #C0DD97; }
+      .badge-hybrid{ background: #72243E; color: #F4C0D1; }
+    }
+
+    /* ── Loading bar ── */
+    .loading-bar {
+      height: 2px;
+      background: var(--border-light);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    .loading-bar.active { display: block; }
+
+    .loading-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--text-primary);
+      border-radius: 2px;
+      animation: loadbar 1.6s ease-in-out infinite;
+    }
+
+    @keyframes loadbar {
+      0%   { width: 0%;   margin-left: 0%; }
+      50%  { width: 60%;  margin-left: 20%; }
+      100% { width: 0%;   margin-left: 100%; }
+    }
+
+    /* ── Error banner ── */
+    .error-banner {
+      background: #FCEBEB;
+      border: 0.5px solid #F09595;
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #A32D2D;
+      margin-bottom: 1.25rem;
+      font-family: 'Space Mono', monospace;
+      display: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .error-banner { background: #501313; color: #F7C1C1; border-color: #791F1F; }
+    }
+
+    .error-banner.visible { display: block; }
+
+    /* ── Results Grid ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .result-col {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 0.5px solid var(--border-light);
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .col-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .col-bm .col-title    { color: #185FA5; }
+    .col-dense .col-title { color: #3B6D11; }
+    .col-hybrid .col-title{ color: #993556; }
+
+    @media (prefers-color-scheme: dark) {
+      .col-bm .col-title    { color: #85B7EB; }
+      .col-dense .col-title { color: #97C459; }
+      .col-hybrid .col-title{ color: #ED93B1; }
+    }
+
+    .col-count {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+
+    .col-body {
+      padding: 8px;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 600px;
+    }
+
+    /* ── Result Cards ── */
+    .result-card {
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      margin-bottom: 6px;
+      border: 0.5px solid var(--border-light);
+      cursor: default;
+      transition: background 0.12s, border-color 0.12s;
+      position: relative;
+    }
+
+    .result-card:last-child { margin-bottom: 0; }
+
+    .result-card:hover {
+      background: var(--bg-secondary);
+      border-color: var(--border-medium);
+    }
+
+    .result-rank {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 0.5px solid var(--border-light);
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: var(--text-tertiary);
+      font-weight: 700;
+      float: right;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    .result-doc-id {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+
+    .result-preview {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ── Empty / Score ── */
+    .empty-state {
+      padding: 2.5rem 1rem;
+      text-align: center;
+    }
+
+    .empty-icon {
+      font-size: 26px;
+      margin-bottom: 8px;
+      opacity: 0.25;
+    }
+
+    .empty-text {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-family: 'Space Mono', monospace;
+    }
+
+    .result-score {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--text-tertiary);
+      margin-top: 5px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      body { padding: 1rem 1rem 3rem; }
+      .results-grid { grid-template-columns: 1fr; }
+      .search-btn { padding: 0 14px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="ir-header">
+    <div class="ir-logo">
+      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="9.5" cy="9.5" r="6" stroke="white" stroke-width="1.6"/>
+        <path d="M14 14L19 19" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M7 9.5H12M9.5 7V12" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ir-title">Neural IR Search</div>
+      <div class="ir-subtitle">Information Retrieval System</div>
+    </div>
+  </div>
+
+  <!-- Search Panel -->
+  <div class="search-panel">
+    <div class="search-row">
+      <input
+        class="search-input"
+        id="query"
+        type="text"
+        placeholder="Enter your search query..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="search-btn" id="searchBtn" onclick="doSearch()">Search</button>
+    </div>
+    <div class="alpha-row">
+      <span class="alpha-label">Alpha</span>
+      <input
+        type="range"
+        id="alpha"
+        min="0" max="1" step="0.1" value="0.2"
+        oninput="updateAlpha(this.value)"
+      />
+      <span class="alpha-value" id="alphaVal">0.2</span>
+    </div>
+    <div class="alpha-hint">
+      <span>BM25 dominant</span>
+      <div class="badges">
+        <span class="badge badge-bm">BM25</span>
+        <span class="badge badge-dense">Dense</span>
+        <span class="badge badge-hybrid">Hybrid</span>
+      </div>
+      <span>Dense dominant</span>
+    </div>
+  </div>
+
+  <!-- Loading bar -->
+  <div class="loading-bar" id="loadingBar">
+    <div class="loading-fill"></div>
+  </div>
+
+  <!-- Error banner -->
+  <div class="error-banner" id="errorBanner"></div>
+
+  <!-- Results -->
+  <div class="results-grid">
+    <div class="result-col col-bm">
+      <div class="col-header">
+        <span class="col-title">BM25 Results</span>
+        <span class="col-count" id="cntBm">—</span>
+      </div>
+      <div class="col-body" id="bodyBm">
+        <div class="empty-state">
+          <div class="empty-icon">◻</div>
+          <div class="empty-text">No results yet</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-col col-dense">
+      <div class="col-header">
+        <span class="col-title">Dense Results</span>
+        <span class="col-count" id="cntDense">—</span>
+      </div>
+      <div class="col-body" id="bodyDense">
+        <div class="empty-state">
+          <div class="empty-icon">◻</div>
+          <div class="empty-text">No results yet</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-col col-hybrid">
+      <div class="col-header">
+        <span class="col-title">Hybrid Results</span>
+        <span class="col-count" id="cntHybrid">—</span>
+      </div>
+      <div class="col-body" id="bodyHybrid">
+        <div class="empty-state">
+          <div class="empty-icon">◻</div>
+          <div class="empty-text">No results yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Alpha slider ──
+    function updateAlpha(val) {
+      document.getElementById('alphaVal').textContent = parseFloat(val).toFixed(1);
+    }
+
+    // ── Escape HTML ──
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Render a results column ──
+    function renderResults(bodyId, countId, items) {
+      const body  = document.getElementById(bodyId);
+      const count = document.getElementById(countId);
+
+      if (!items || items.length === 0) {
+        count.textContent = '0 docs';
+        body.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">◻</div>
+            <div class="empty-text">No results found</div>
+          </div>`;
+        return;
+      }
+
+      count.textContent = items.length + ' doc' + (items.length !== 1 ? 's' : '');
+
+      body.innerHTML = items.map((item, i) => {
+        const preview = item.text
+          ? esc(item.text.substring(0, 200)) + (item.text.length > 200 ? '…' : '')
+          : '<em style="color:var(--text-tertiary)">No preview</em>';
+
+        const scoreHtml = item.score !== undefined
+          ? `<span class="result-score">score: ${parseFloat(item.score).toFixed(4)}</span>`
+          : '';
+
+        return `
+          <div class="result-card">
+            <span class="result-rank">${i + 1}</span>
+            <div class="result-doc-id">${esc(String(item.doc_id))}</div>
+            <div class="result-preview">${preview}</div>
+            ${scoreHtml}
+          </div>`;
+      }).join('');
+    }
+
+    // ── Main search ──
+    async function doSearch() {
+      const query = document.getElementById('query').value.trim();
+      if (!query) return;
+
+      const alpha   = document.getElementById('alpha').value;
+      const btn     = document.getElementById('searchBtn');
+      const loader  = document.getElementById('loadingBar');
+      const errEl   = document.getElementById('errorBanner');
+
+      btn.disabled = true;
+      btn.textContent = 'Searching…';
+      loader.classList.add('active');
+      errEl.classList.remove('visible');
+
+      try {
+        const url = `http://127.0.0.1:8000/search?query=${encodeURIComponent(query)}&alpha=${alpha}`;
+        const res  = await fetch(url);
+
+        if (!res.ok) throw new Error(`Server error: ${res.status} ${res.statusText}`);
+
+        const data = await res.json();
+
+        renderResults('bodyBm',     'cntBm',     data.results.bm25);
+        renderResults('bodyDense',  'cntDense',  data.results.dense);
+        renderResults('bodyHybrid', 'cntHybrid', data.results.hybrid);
+
+      } catch (e) {
+        errEl.textContent = '⚠ ' + e.message;
+        errEl.classList.add('visible');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Search';
+        loader.classList.remove('active');
+      }
+    }
+
+    // Enter key support
+    document.getElementById('query').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doSearch();
+    });
+  </script>
+
+</body>
+</html>
