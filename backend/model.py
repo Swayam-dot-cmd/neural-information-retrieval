@@ -68,7 +68,7 @@ def initialize():
 
 
 # 🔥 STEP 2: Retrieval function
-ddef hybrid_retrieve(query, alpha=0.5, top_k=10):
+def hybrid_retrieve(query, alpha=0.5, top_k=10):
     global corpus_embeddings
 
     tokenized_query = query.split()
