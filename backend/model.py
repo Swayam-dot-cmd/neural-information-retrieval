@@ -56,7 +56,7 @@ def initialize():
     print("✅ Pipeline loaded successfully")
 
 # Load once globally
-bm25, dense_model, corpus_embeddings, doc_ids, corpus_texts = load_pipeline()
+# bm25, dense_model, corpus_embeddings, doc_ids, corpus_texts = load_pipeline()
 
 
 # 🔥 STEP 2: Retrieval function
