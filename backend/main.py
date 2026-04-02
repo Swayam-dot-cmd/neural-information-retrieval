@@ -1,5 +1,7 @@
 # backend/main.py
-
+@app.get("/")
+def root():
+    return {"message": "IR system running"}
 from fastapi import FastAPI
 search = None
 from fastapi.middleware.cors import CORSMiddleware
