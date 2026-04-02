@@ -3,12 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-search = None
-
-@app.get("/")
-def root():
-    return {"message": "IR system is running 🚀"}
-
+# ✅ ADD CORS HERE (before routes)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,6 +11,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+search = None
+
+@app.get("/")
+def root():
+    return {"message": "IR system is running 🚀"}
 
 @app.get("/search")
 def search_api(query: str, alpha: float = 0.2):
