@@ -6,8 +6,8 @@ doc_ids = None
 corpus_texts = None
 initialized = False
 
-from beir.datasets.data_loader import GenericDataLoader
-from beir import util
+#from beir.datasets.data_loader import GenericDataLoader
+#from beir import util
 
 from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
