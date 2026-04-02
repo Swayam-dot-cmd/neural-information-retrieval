@@ -35,11 +35,14 @@ def initialize():
 
     import numpy as np
 
-    corpus_embeddings = np.load("corpus_embeddings.npy")
-    doc_ids = np.load("doc_ids.npy").tolist()
+    import os
 
-    with open("corpus_texts.txt", "r", encoding="utf-8") as f:
-        corpus_texts = [line.strip() for line in f]
+    BASE_DIR = os.path.dirname(__file__)
+
+    corpus_embeddings = np.load(os.path.join(BASE_DIR, "corpus_embeddings.npy"))
+    doc_ids = np.load(os.path.join(BASE_DIR, "doc_ids.npy")).tolist()
+
+    with open(os.path.join(BASE_DIR, "corpus_texts.txt"), "r", encoding="utf-8") as f:
 
     # BM25
     tokenized_corpus = [doc.split() for doc in corpus_texts]
