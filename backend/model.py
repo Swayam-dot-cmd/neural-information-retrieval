@@ -65,14 +65,14 @@ def hybrid_retrieve(query, alpha=0.5, top_k=10):
     model = get_model()
     query_embedding = model.encode([query], convert_to_numpy=True)[0]
     # 🔥 Lazy compute corpus embeddings
-    if corpus_embeddings is None:
-        print("Encoding corpus embeddings...")
-        model = get_model()
-        corpus_embeddings = model.encode(
-            corpus_texts,
-            convert_to_numpy=True,
-            show_progress_bar=True
-        )
+#    if corpus_embeddings is None:
+ #       print("Encoding corpus embeddings...")
+  #      model = get_model()
+   #     corpus_embeddings = model.encode(
+    #        corpus_texts,
+     #       convert_to_numpy=True,
+      #      show_progress_bar=True
+       # )
 
     dense_scores = cosine_similarity([query_embedding], corpus_embeddings)[0]
 
