@@ -26,42 +26,28 @@ def get_model():
 
 # 🔥 STEP 1: Load everything ONCE
 def initialize():
-    global bm25, dense_model, corpus_embeddings, doc_ids, corpus_texts, initialized
+    global bm25, corpus_embeddings, doc_ids, corpus_texts, initialized
 
     if initialized:
         return
 
-    print("Loading dataset and models...")
+    print("Loading precomputed data...")
 
-    # Download dataset
-    dataset = "scifact"
-    url = f"https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{dataset}.zip"
+    import numpy as np
 
-    out_dir = "./datasets"
-    data_path = util.download_and_unzip(url, out_dir)
+    corpus_embeddings = np.load("corpus_embeddings.npy")
+    doc_ids = np.load("doc_ids.npy").tolist()
 
-    # Load data
-    corpus, queries, qrels = GenericDataLoader(data_path).load(split="test")
-
-    doc_ids = list(corpus.keys())
-    corpus_texts = [corpus[doc_id]["text"] for doc_id in doc_ids]
+    with open("corpus_texts.txt", "r", encoding="utf-8") as f:
+        corpus_texts = [line.strip() for line in f]
 
     # BM25
     tokenized_corpus = [doc.split() for doc in corpus_texts]
     bm25 = BM25Okapi(tokenized_corpus)
 
-    # Dense model
-   # dense_model = SentenceTransformer('BAAI/bge-small-en')
-
-    # Embeddings
-  #  corpus_embeddings = dense_model.encode(
-   #     corpus_texts,
-    #    convert_to_numpy=True,
-     #   show_progress_bar=True
-    #)
-
     initialized = True
-    print("✅ Pipeline loaded successfully")
+
+    print("✅ Fast load complete")
 
 # Load once globally
 # bm25, dense_model, corpus_embeddings, doc_ids, corpus_texts = load_pipeline()
