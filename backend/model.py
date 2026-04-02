@@ -19,8 +19,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 def get_model():
     global dense_model
     if dense_model is None:
-        print("Loading BGE model...")
-        dense_model = SentenceTransformer('BAAI/bge-small-en')
+        print("Loading MiniLM model...")
+        dense_model = SentenceTransformer('all-MiniLM-L6-v2')
     return dense_model
 
 
