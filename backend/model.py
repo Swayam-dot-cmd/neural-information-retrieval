@@ -9,7 +9,7 @@ doc_ids = None
 corpus_texts = None
 initialized = False
 
-HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2"
 
 
 def get_embedding(text):
