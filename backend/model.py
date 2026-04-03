@@ -9,7 +9,7 @@ doc_ids = None
 corpus_texts = None
 initialized = False
 
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2"
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/intfloat/e5-small-v2"
 
 
 def get_embedding(text):
@@ -24,8 +24,11 @@ def get_embedding(text):
         "Content-Type": "application/json"
     }
 
+    # 🔥 E5 models require prefix
+    text = "query: " + text
+
     response = requests.post(
-        "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2",
+        "https://router.huggingface.co/hf-inference/models/intfloat/e5-small-v2",
         headers=headers,
         json={
             "inputs": text,
@@ -36,13 +39,11 @@ def get_embedding(text):
     data = response.json()
     print("HF response:", data)
 
-    # ❌ error handling
     if isinstance(data, dict):
         raise Exception(f"HF API Error: {data}")
 
     embedding = np.array(data)
 
-    # flatten if needed
     if embedding.ndim == 2:
         embedding = embedding.mean(axis=0)
 
