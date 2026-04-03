@@ -22,8 +22,20 @@ def get_embedding(text):
         json={"inputs": text}
     )
 
-    embedding = np.array(response.json())
-    return embedding.mean(axis=0)
+    data = response.json()
+
+    print("HF response:", data)
+    # 🔴 Handle errors
+    if isinstance(data, dict):
+        raise Exception(f"HF API Error: {data}")
+
+    embedding = np.array(data)
+
+    # Ensure correct shape
+    if embedding.ndim == 2:
+        embedding = embedding.mean(axis=0)
+
+    return embedding
 
 
 def normalize(scores):
