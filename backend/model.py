@@ -99,11 +99,19 @@ def hybrid_retrieve(query, alpha=0.5, top_k=10):
 
 # 🔥 STEP 3: API-facing function
 def search(query: str, alpha: float = 0.2):
-    initialize()   # 👈 THIS IS THE KEY FIX
+    print("🔍 Search called:", query)
+
+    initialize()
+    print("✅ Initialization done")
 
     bm25_results = hybrid_retrieve(query, alpha=1.0, top_k=10)
+    print("✅ BM25 done")
+
     dense_results = hybrid_retrieve(query, alpha=0.0, top_k=10)
+    print("✅ Dense done")
+
     hybrid_results = hybrid_retrieve(query, alpha=alpha, top_k=10)
+    print("✅ Hybrid done")
 
     return {
         "bm25": bm25_results,
