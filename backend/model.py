@@ -43,6 +43,7 @@ def initialize():
     doc_ids = np.load(os.path.join(BASE_DIR, "doc_ids.npy")).tolist()
 
     with open(os.path.join(BASE_DIR, "corpus_texts.txt"), "r", encoding="utf-8") as f:
+        corpus_texts = [line.strip() for line in f]
 
     # BM25
     tokenized_corpus = [doc.split() for doc in corpus_texts]
