@@ -26,11 +26,11 @@ def startup_event():
     search = search_func
 
     # Warmup (loads model + embeddings)
-    try:
-        search("test")
-        print("✅ Warmup complete")
-    except Exception as e:
-        print("⚠️ Warmup failed:", e)
+ #   try:
+  #      search("test")
+   #     print("✅ Warmup complete")
+    #except Exception as e:
+     #   print("⚠️ Warmup failed:", e)
 
 
 @app.get("/")
