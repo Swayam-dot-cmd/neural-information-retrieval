@@ -16,26 +16,32 @@ def get_embedding(text):
     token = os.getenv("HF_TOKEN")
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.post(
-        HF_API_URL,
-        headers=headers,
-        json={"inputs": text}
-    )
+    for _ in range(3):
+        response = requests.post(
+            HF_API_URL,
+            headers=headers,
+            json={"inputs": [text]}   # ✅ FIX HERE
+        )
 
-    data = response.json()
+        data = response.json()
+        print("HF response:", data)
 
-    print("HF response:", data)
-    # 🔴 Handle errors
-    if isinstance(data, dict):
-        raise Exception(f"HF API Error: {data}")
+        if isinstance(data, dict) and "estimated_time" in data:
+            import time
+            time.sleep(3)
+            continue
 
-    embedding = np.array(data)
+        if isinstance(data, dict):
+            raise Exception(f"HF API Error: {data}")
 
-    # Ensure correct shape
-    if embedding.ndim == 2:
-        embedding = embedding.mean(axis=0)
+        embedding = np.array(data)
 
-    return embedding
+        if embedding.ndim == 2:
+            embedding = embedding.mean(axis=0)
+
+        return embedding
+
+    raise Exception("HF API failed after retries")
 
 
 def normalize(scores):
