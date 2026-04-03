@@ -5,9 +5,8 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
 from sklearn.metrics.pairwise import cosine_similarity
-from threading import Lock
 
-# Globals
+# 🔹 Global variables (DO NOT LOAD ANYTHING HERE)
 bm25 = None
 dense_model = None
 corpus_embeddings = None
@@ -15,15 +14,13 @@ doc_ids = None
 corpus_texts = None
 initialized = False
 
-init_lock = Lock()
 
-
-# 🔥 Load model once
+# 🔥 Load model lazily
 def get_model():
     global dense_model
     if dense_model is None:
         print("🔄 Loading MiniLM model...")
-        dense_model = SentenceTransformer('all-MiniLM-L6-v2')
+        dense_model = SentenceTransformer("all-MiniLM-L6-v2")
     return dense_model
 
 
@@ -35,38 +32,48 @@ def normalize(scores):
     return (scores - min_s) / (max_s - min_s)
 
 
-# 🔥 Initialize everything ONCE
+# 🔥 Initialize EVERYTHING lazily (only when needed)
 def initialize():
     global bm25, corpus_embeddings, doc_ids, corpus_texts, initialized
 
-    with init_lock:
-        if initialized:
-            return
+    if initialized:
+        return
 
-        print("🔄 Loading precomputed data...")
+    print("⚡ Initializing data on first request...")
 
-        try:
-            BASE_DIR = os.path.dirname(__file__)
+    BASE_DIR = os.path.dirname(__file__)
 
-            corpus_embeddings = np.load(os.path.join(BASE_DIR, "corpus_embeddings.npy"))
-            doc_ids = np.load(os.path.join(BASE_DIR, "doc_ids.npy"), allow_pickle=True).tolist()
+    try:
+        # Load embeddings
+        corpus_embeddings = np.load(
+            os.path.join(BASE_DIR, "corpus_embeddings.npy")
+        )
 
-            with open(os.path.join(BASE_DIR, "corpus_texts.txt"), "r", encoding="utf-8") as f:
-                corpus_texts = [line.strip() for line in f]
+        doc_ids = np.load(
+            os.path.join(BASE_DIR, "doc_ids.npy"),
+            allow_pickle=True
+        ).tolist()
 
-            # Sanity check
-            assert len(doc_ids) == len(corpus_texts) == len(corpus_embeddings)
+        with open(
+            os.path.join(BASE_DIR, "corpus_texts.txt"),
+            "r",
+            encoding="utf-8"
+        ) as f:
+            corpus_texts = [line.strip() for line in f]
 
-            # BM25
-            tokenized_corpus = [doc.lower().split() for doc in corpus_texts]
-            bm25 = BM25Okapi(tokenized_corpus)
+        # Sanity check
+        assert len(doc_ids) == len(corpus_texts) == len(corpus_embeddings)
 
-            initialized = True
-            print("✅ Initialization complete")
+        # Build BM25
+        tokenized_corpus = [doc.lower().split() for doc in corpus_texts]
+        bm25 = BM25Okapi(tokenized_corpus)
 
-        except Exception as e:
-            print("❌ Initialization failed:", e)
-            raise
+        initialized = True
+        print("✅ Initialization complete")
+
+    except Exception as e:
+        print("❌ Initialization failed:", e)
+        raise
 
 
 # 🔥 Core retrieval
@@ -94,17 +101,18 @@ def hybrid_retrieve(query, query_embedding, alpha=0.5, top_k=10):
     ]
 
 
-# 🔥 API-facing function
+# 🔥 MAIN SEARCH FUNCTION (lazy everything)
 def search(query: str, alpha: float = 0.2):
     global initialized
 
     print("🔍 Query:", query)
 
+    # Initialize only on first request
     if not initialized:
-        print("⚡ Initializing on first request...")
         initialize()
 
     model = get_model()
+
     query_embedding = model.encode([query], convert_to_numpy=True)[0]
 
     bm25_results = hybrid_retrieve(query, query_embedding, alpha=1.0)
