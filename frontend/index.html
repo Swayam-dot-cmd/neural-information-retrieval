@@ -583,16 +583,16 @@
       errEl.classList.remove('visible');
 
       try {
-        const url = `https://ir-backend-ozi7.onrender.com/search?query=${encodeURIComponent(query)}&alpha=${alpha}`;
+        const url = `https://neural-information-retrieval-production.up.railway.app/search?query=${encodeURIComponent(query)}&alpha=${alpha}`;
         const res  = await fetch(url);
 
         if (!res.ok) throw new Error(`Server error: ${res.status} ${res.statusText}`);
 
         const data = await res.json();
 
-        renderResults('bodyBm',     'cntBm',     data.results.bm25);
-        renderResults('bodyDense',  'cntDense',  data.results.dense);
-        renderResults('bodyHybrid', 'cntHybrid', data.results.hybrid);
+        renderResults('bodyBm',     'cntBm',     data.bm25);
+renderResults('bodyDense',  'cntDense',  data.dense);
+renderResults('bodyHybrid', 'cntHybrid', data.hybrid);
 
       } catch (e) {
         errEl.textContent = '⚠ ' + e.message;
