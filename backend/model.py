@@ -96,9 +96,13 @@ def hybrid_retrieve(query, query_embedding, alpha=0.5, top_k=10):
 
 # 🔥 API-facing function
 def search(query: str, alpha: float = 0.2):
+    global initialized
+
     print("🔍 Query:", query)
 
-    initialize()
+    if not initialized:
+        print("⚡ Initializing on first request...")
+        initialize()
 
     model = get_model()
     query_embedding = model.encode([query], convert_to_numpy=True)[0]
