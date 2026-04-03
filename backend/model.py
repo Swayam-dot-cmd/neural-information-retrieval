@@ -13,36 +13,40 @@ HF_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transfo
 
 
 def get_embedding(text):
+    import requests
+    import numpy as np
+    import os
+
     token = os.getenv("HF_TOKEN")
-    headers = {"Authorization": f"Bearer {token}"}
 
-    for _ in range(3):
-        response = requests.post(
-            HF_API_URL,
-            headers=headers,
-            json={"inputs": [text]}   # ✅ FIX HERE
-        )
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
 
-        data = response.json()
-        print("HF response:", data)
+    response = requests.post(
+        "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2",
+        headers=headers,
+        json={
+            "inputs": text,
+            "options": {"wait_for_model": True}
+        }
+    )
 
-        if isinstance(data, dict) and "estimated_time" in data:
-            import time
-            time.sleep(3)
-            continue
+    data = response.json()
+    print("HF response:", data)
 
-        if isinstance(data, dict):
-            raise Exception(f"HF API Error: {data}")
+    # ❌ error handling
+    if isinstance(data, dict):
+        raise Exception(f"HF API Error: {data}")
 
-        embedding = np.array(data)
+    embedding = np.array(data)
 
-        if embedding.ndim == 2:
-            embedding = embedding.mean(axis=0)
+    # flatten if needed
+    if embedding.ndim == 2:
+        embedding = embedding.mean(axis=0)
 
-        return embedding
-
-    raise Exception("HF API failed after retries")
-
+    return embedding
 
 def normalize(scores):
     min_s, max_s = scores.min(), scores.max()
