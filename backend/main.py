@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from model import search as search_func
+from .model import search as search_func
 
 app = FastAPI()
 
