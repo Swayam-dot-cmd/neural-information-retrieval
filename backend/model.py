@@ -20,6 +20,9 @@ def get_model():
     global dense_model
     if dense_model is None:
         print("🔄 Loading MiniLM model...")
+
+        from sentence_transformers import SentenceTransformer  # 🔥 lazy import
+
         dense_model = SentenceTransformer("all-MiniLM-L6-v2")
     return dense_model
 
