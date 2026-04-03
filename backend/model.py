@@ -12,7 +12,7 @@ initialized = False
 HF_API_URL = "https://router.huggingface.co/embeddings/intfloat/e5-small-v2"
 
 
-def get_embedding(text):
+ddef get_embedding(text):
     import requests
     import numpy as np
     import os
@@ -24,16 +24,25 @@ def get_embedding(text):
         "Content-Type": "application/json"
     }
 
+    url = "https://router.huggingface.co/embeddings/intfloat/e5-small-v2"
+
     response = requests.post(
-        "https://router.huggingface.co/embeddings/intfloat/e5-small-v2",
+        url,
         headers=headers,
         json={
             "inputs": ["query: " + text]
         }
     )
 
-    data = response.json()
-    print("HF response:", data)
+    # 🔴 DEBUG: print raw response
+    print("RAW RESPONSE:", response.text)
+
+    try:
+        data = response.json()
+    except:
+        raise Exception(f"Invalid response from HF: {response.text}")
+
+    print("HF parsed:", data)
 
     if isinstance(data, dict):
         raise Exception(f"HF API Error: {data}")
