@@ -583,7 +583,7 @@
       errEl.classList.remove('visible');
 
       try {
-        const url = `http://127.0.0.1:8000/search?query=${encodeURIComponent(query)}&alpha=${alpha}`;
+        const url = `https://ir-backend-ozi7.onrender.com/search?query=${encodeURIComponent(query)}&alpha=${alpha}`;
         const res  = await fetch(url);
 
         if (!res.ok) throw new Error(`Server error: ${res.status} ${res.statusText}`);
