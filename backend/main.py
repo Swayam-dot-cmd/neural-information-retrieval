@@ -35,3 +35,10 @@ def search_api(query: str, alpha: float = 0.2):
 
     except Exception as e:
         return {"error": str(e)}
+
+import os
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=port)
