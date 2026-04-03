@@ -2,29 +2,16 @@
 
 import os
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-# 🔹 Global variables (DO NOT LOAD ANYTHING HERE)
+# 🔹 Globals
 bm25 = None
-dense_model = None
-corpus_embeddings = None
+vectorizer = None
+tfidf_matrix = None
 doc_ids = None
 corpus_texts = None
 initialized = False
-
-
-# 🔥 Load model lazily
-def get_model():
-    global dense_model
-    if dense_model is None:
-        print("🔄 Loading MiniLM model...")
-
-        from sentence_transformers import SentenceTransformer  # 🔥 lazy import
-
-        dense_model = SentenceTransformer("all-MiniLM-L6-v2")
-    return dense_model
 
 
 # 🔥 Normalize safely
@@ -35,23 +22,19 @@ def normalize(scores):
     return (scores - min_s) / (max_s - min_s)
 
 
-# 🔥 Initialize EVERYTHING lazily (only when needed)
+# 🔥 Initialize (lazy loading)
 def initialize():
-    global bm25, corpus_embeddings, doc_ids, corpus_texts, initialized
+    global bm25, vectorizer, tfidf_matrix, doc_ids, corpus_texts, initialized
 
     if initialized:
         return
 
-    print("⚡ Initializing data on first request...")
+    print("⚡ Initializing lightweight IR system...")
 
     BASE_DIR = os.path.dirname(__file__)
 
     try:
-        # Load embeddings
-        corpus_embeddings = np.load(
-            os.path.join(BASE_DIR, "corpus_embeddings.npy")
-        )
-
+        # Load data
         doc_ids = np.load(
             os.path.join(BASE_DIR, "doc_ids.npy"),
             allow_pickle=True
@@ -65,11 +48,15 @@ def initialize():
             corpus_texts = [line.strip() for line in f]
 
         # Sanity check
-        assert len(doc_ids) == len(corpus_texts) == len(corpus_embeddings)
+        assert len(doc_ids) == len(corpus_texts)
 
-        # Build BM25
+        # 🔹 BM25
         tokenized_corpus = [doc.lower().split() for doc in corpus_texts]
         bm25 = BM25Okapi(tokenized_corpus)
+
+        # 🔹 TF-IDF (dense replacement)
+        vectorizer = TfidfVectorizer()
+        tfidf_matrix = vectorizer.fit_transform(corpus_texts)
 
         initialized = True
         print("✅ Initialization complete")
@@ -80,11 +67,15 @@ def initialize():
 
 
 # 🔥 Core retrieval
-def hybrid_retrieve(query, query_embedding, alpha=0.5, top_k=10):
+def hybrid_retrieve(query, alpha=0.5, top_k=10):
     tokenized_query = query.lower().split()
 
+    # BM25 scores
     bm25_scores = bm25.get_scores(tokenized_query)
-    dense_scores = cosine_similarity([query_embedding], corpus_embeddings)[0]
+
+    # TF-IDF similarity (acts like dense)
+    query_vec = vectorizer.transform([query])
+    dense_scores = (tfidf_matrix @ query_vec.T).toarray().flatten()
 
     # Normalize
     bm25_scores = normalize(bm25_scores)
@@ -98,32 +89,23 @@ def hybrid_retrieve(query, query_embedding, alpha=0.5, top_k=10):
     return [
         {
             "doc_id": doc_ids[i],
-            "text": corpus_texts[i][:300]  # truncate for speed
+            "text": corpus_texts[i][:300]
         }
         for i in top_indices
     ]
 
 
-# 🔥 MAIN SEARCH FUNCTION (lazy everything)
+# 🔥 Main search
 def search(query: str, alpha: float = 0.2):
     global initialized
 
     print("🔍 Query:", query)
 
-    # Initialize only on first request
     if not initialized:
         initialize()
 
-    model = get_model()
-
-    query_embedding = model.encode([query], convert_to_numpy=True)[0]
-
-    bm25_results = hybrid_retrieve(query, query_embedding, alpha=1.0)
-    dense_results = hybrid_retrieve(query, query_embedding, alpha=0.0)
-    hybrid_results = hybrid_retrieve(query, query_embedding, alpha=alpha)
-
     return {
-        "bm25": bm25_results,
-        "dense": dense_results,
-        "hybrid": hybrid_results
+        "bm25": hybrid_retrieve(query, alpha=1.0),
+        "dense": hybrid_retrieve(query, alpha=0.0),
+        "hybrid": hybrid_retrieve(query, alpha=alpha)
     }
