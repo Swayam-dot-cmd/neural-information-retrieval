@@ -9,7 +9,7 @@ doc_ids = None
 corpus_texts = None
 initialized = False
 
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/intfloat/e5-small-v2"
+HF_API_URL = "https://router.huggingface.co/embeddings/intfloat/e5-small-v2"
 
 
 def get_embedding(text):
@@ -24,15 +24,11 @@ def get_embedding(text):
         "Content-Type": "application/json"
     }
 
-    # 🔥 E5 models require prefix
-    text = "query: " + text
-
     response = requests.post(
-        "https://router.huggingface.co/hf-inference/models/intfloat/e5-small-v2",
+        "https://router.huggingface.co/embeddings/intfloat/e5-small-v2",
         headers=headers,
         json={
-            "inputs": text,
-            "options": {"wait_for_model": True}
+            "inputs": ["query: " + text]
         }
     )
 
@@ -42,12 +38,7 @@ def get_embedding(text):
     if isinstance(data, dict):
         raise Exception(f"HF API Error: {data}")
 
-    embedding = np.array(data)
-
-    if embedding.ndim == 2:
-        embedding = embedding.mean(axis=0)
-
-    return embedding
+    return np.array(data[0])
 
 def normalize(scores):
     min_s, max_s = scores.min(), scores.max()
