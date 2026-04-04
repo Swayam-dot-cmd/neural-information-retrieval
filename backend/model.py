@@ -9,13 +9,12 @@ doc_ids = None
 corpus_texts = None
 initialized = False
 
-HF_API_URL = "https://router.huggingface.co/embeddings/intfloat/e5-small-v2"
-
-
-ddef get_embedding(text):
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/intfloat/e5-small-v2"
+# 🔹 EMBEDDING FUNCTION
+def get_embedding(text):
+    import os
     import requests
     import numpy as np
-    import os
 
     token = os.getenv("HF_TOKEN")
 
@@ -24,31 +23,31 @@ ddef get_embedding(text):
         "Content-Type": "application/json"
     }
 
-    url = "https://router.huggingface.co/embeddings/intfloat/e5-small-v2"
+    HF_API_URL = "https://router.huggingface.co/hf-inference/models/BAAI/bge-small-en-v1.5"
+
+    payload = {
+        "inputs": text,
+        "options": {"wait_for_model": True}
+    }
 
     response = requests.post(
-        url,
+        HF_API_URL,
         headers=headers,
-        json={
-            "inputs": ["query: " + text]
-        }
+        json=payload
     )
 
-    # 🔴 DEBUG: print raw response
-    print("RAW RESPONSE:", response.text)
+    if response.status_code != 200:
+        raise Exception(f"HF API Error: {response.text}")
 
-    try:
-        data = response.json()
-    except:
-        raise Exception(f"Invalid response from HF: {response.text}")
+    data = response.json()
 
-    print("HF parsed:", data)
+    # Handle nested output
+    if isinstance(data[0], list):
+        return np.array(data[0])
+    else:
+        return np.array(data)
 
-    if isinstance(data, dict):
-        raise Exception(f"HF API Error: {data}")
-
-    return np.array(data[0])
-
+# 🔹 NORMALIZE FUNCTION (MISSING BEFORE)
 def normalize(scores):
     min_s, max_s = scores.min(), scores.max()
     if max_s - min_s < 1e-8:
@@ -56,6 +55,7 @@ def normalize(scores):
     return (scores - min_s) / (max_s - min_s)
 
 
+# 🔹 INITIALIZE FUNCTION (MISSING BEFORE)
 def initialize():
     global bm25, corpus_embeddings, doc_ids, corpus_texts, initialized
 
@@ -87,8 +87,10 @@ def initialize():
     print("✅ Initialized")
 
 
+# 🔹 HYBRID RETRIEVAL
 def hybrid_retrieve(query, alpha=0.5, top_k=10):
     tokenized_query = query.split()
+
     bm25_scores = bm25.get_scores(tokenized_query)
 
     query_embedding = get_embedding(query)
@@ -110,7 +112,10 @@ def hybrid_retrieve(query, alpha=0.5, top_k=10):
     ]
 
 
+# 🔹 MAIN SEARCH FUNCTION
 def search(query: str, alpha: float = 0.2):
+    global initialized
+
     if not initialized:
         initialize()
 
