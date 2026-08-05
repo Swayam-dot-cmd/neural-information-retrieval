@@ -2,6 +2,15 @@ import os
 import numpy as np
 import requests
 from rank_bm25 import BM25Okapi
+import re
+
+_word = re.compile(r"[a-z0-9]+")
+
+def tokenize(s: str):
+    """Lowercase + strip punctuation. The original used s.split(), so
+    'Cancer' never matched 'cancer' and 'cells,' never matched 'cells'."""
+    return _word.findall(s.lower())
+
 
 bm25 = None
 corpus_embeddings = None
@@ -80,7 +89,7 @@ def initialize():
     ) as f:
         corpus_texts = [line.strip() for line in f]
 
-    tokenized_corpus = [doc.split() for doc in corpus_texts]
+    tokenized_corpus = [tokenize(doc) for doc in corpus_texts]
     bm25 = BM25Okapi(tokenized_corpus)
 
     initialized = True
@@ -89,7 +98,7 @@ def initialize():
 
 # 🔹 HYBRID RETRIEVAL
 def hybrid_retrieve(query, alpha=0.5, top_k=10):
-    tokenized_query = query.split()
+    tokenized_query = tokenize(query)
 
     bm25_scores = bm25.get_scores(tokenized_query)
 
